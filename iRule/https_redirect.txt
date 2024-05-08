@@ -1,0 +1,5 @@
+Basic Redirect other site:
+############################
+when HTTP_REQUEST {
+        HTTP::redirect https://www.onet.pl
+}
