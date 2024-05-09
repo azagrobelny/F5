@@ -1,0 +1,3 @@
+show ltm traffic-matching-criteria source-address-list 172.24.1.1
+ 
+show sys connection cs-client-addr 172.24.163.166 virtual-server proxy.com.pl
