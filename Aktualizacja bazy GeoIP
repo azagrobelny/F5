@@ -1,0 +1,53 @@
+Należy wykonać na wszystkich F5 DMZ-owych (4 sztuki: 2x DMZ Bankowe + 2x DMZ Apiusowe). Nie ma konieczności wykonywania aktualizacji w okienku serwisowym, gdyż obecnie nie korzystamy z reguły geolokacyjnej na F5. Aktualizacja nie ma wpływu na działanie systemu. Bez znaczenia kolejność wykonywania aktualizacji (active / standby).
+Uwaga: W 2023 roku zmieniła się lokalizacja update'ów na stronie F5. Obecnie jest przekierowanie na https://my.f5.com/manage/s/downloads Tam wybieramy platformę i wersję. Są do wyboru dwa pliki:
+GeoLocationUpdates_Edge
+GeoLocationUpdates_Pulse
+Wybieramy PULSE.
+Plik z updatem + plik md5 ściągamy i wrzucamy do /shared/tmp i przechodzimy do punktu 3)
+ 
+1) Sprawdzenie aktualności bazy GeoIP
+a) z GUI:
+Przejść do: System → Software Management: Update Check
+
+Na powyższym screenie mamy informację, że baza GeoIP jest aktualna i nie trzeba aktualizować. W przypadku nieaktualnej bazy będzie dostępny link (na screenie w punkcie 2). 
+Informacja z jakiego dnia mamy bieżącą bazę znajduje się w wierszu Last Checked Version.
+Available Update - nie sugerujemy się tym. Jest tu pokazana data wersji dla EDGE (którą F5 chce niebawem porzucić).
+ 
+b) z linii komend (powłoka bash):
+#ls -ltr /shared/GeoIP/v2
+
+Interesuje nas data zaznaczonych plików.
+ 
+2) Ściągnąć ze strony f5 nową bazę. Wchodzimy bezpośrednio z naszej f5:  System  ››  Software Management : Update Check i klikamy na link np. z tabeli "Geo Location Region2 (Worldwide) Data". Link w wierszu "Available Update". Zalogować się na stronie F5, ściągnąć plik ZIP + plik MD5 i wrzucić na każdą f5-tkę do /shared/tmp – należy zalogować się na użytkownika z powłoką bash (np. admin).
+
+ 
+3) Wykonać backup obecnych plików GeoIP:
+#cp -R /shared/GeoIP/* /shared/GeoIP_backup/ (nadpisać pliki o ile trzeba)
+ 
+4) przejść do katalogu /shared/tmp/ i sprawdzić sumę kontrolną ściągniętego pliku, powinien być status OK:
+#cd /shared/tmp
+#md5sum -c *.md5
+ip-geolocation-v2-2.0.0-20220509.585.0.zip: OK
+ 
+5) rozpakować plik ZIP:
+[admin@pli-000a21:Active:In Sync] tmp # unzip ip-geolocation-v2-2.0.0-20220509.585.0.zip
+Archive:  ip-geolocation-v2-2.0.0-20220509.585.0.zip
+  inflating: geoip-data-v2-Region2-2.0.0-20220509.585.0.i686.rpm 
+  inflating: geoip-data-v2-ISP-2.0.0-20220509.585.0.i686.rpm 
+  inflating: geoip-data-v2-Org-2.0.0-20220509.585.0.i686.rpm
+ 
+6) dla każdego rozpakowanego pliku (3 sztuki) użyć komendy:
+geoip_update_data -f </path/to/rpm> , np:
+[admin@pli-000a21:Active:In Sync] tmp # geoip_update_data -f geoip-data-v2-Region2-2.0.0-20220509.585.0.i686.rpm
+[admin@pli-000a21:Active:In Sync] tmp # geoip_update_data -f geoip-data-v2-ISP-2.0.0-20220509.585.0.i686.rpm   
+[admin@pli-000a21:Active:In Sync] tmp # geoip_update_data -f geoip-data-v2-Org-2.0.0-20220509.585.0.i686.rpm
+ 
+7) zweryfikować poprawną instalację bazy:
+# geoip_lookup -f /shared/GeoIP/v2/F5GeoIPOrg.dat 193.111.166.166
+
+ 
+ 
+8) usunąć z /shared/tmp zip-a, plik md5, rozpakowane 3 pliki rpm i README.txt
+rm -f ip-geo*
+rm -f *.rpm
+rm -f README.txt
