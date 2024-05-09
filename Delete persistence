@@ -1,0 +1,1 @@
+delete ltm persistence persist-records virtual proxy.com.pl-80
